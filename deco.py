@@ -10,6 +10,8 @@ modifying how the function is called.
 Examples:
 """
 from typing import Callable, Dict, TypeVar
+from functools import wraps
+
 
 import timeit
 
@@ -51,18 +53,40 @@ def memoize(func: Callable[..., T]) -> Callable[..., T]:
         A new function with memoization behavior.
     """
     cache: Dict[tuple, T] = {}
-
     def wrapper(*args: tuple) -> T:
         if args in cache:
             return cache[args]
         result = func(*args)
         cache[args] = result
         return result
-
     return wrapper
 
 
-@memoize
+def retry_on_failure(runs: int) -> Callable[[Callable], Callable]:
+    """A decorator that retries a function on failure the specified number of
+    times.
+
+    Args:
+    - n: The number of times to retry the function on failure.
+
+    Returns:
+    - The decorated function.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for i in range(runs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception:
+                    if i == runs - 1:
+                        raise
+        return wrapper
+    return decorator
+
+
+
+@retry_on_failure(runs=3)
 def loopy():
     total = 0
     for i in range(100000):
