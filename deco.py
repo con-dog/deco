@@ -170,12 +170,33 @@ def color_text(fg_color: str = "cyan", bg_color: str = "yellow") -> Callable[[Ca
         return wrapper
     return decorator
 
+def singleton(func: Callable) -> Callable:
+    """
+    A decorator that turns a function into a singleton, meaning it can only be run once.
+
+    Args:
+    - f: The function to be decorated.
+
+    Returns:
+    - The decorated function.
+    """
+    class Wrapper:
+        def __init__(self, func):
+            self.func = func
+            self.ran = False
+
+        def __call__(self, *args, **kwargs):
+            if self.ran:
+                raise Exception("This function has already been run")
+            self.ran = True
+            return self.func(*args, **kwargs)
+
+    return Wrapper(func)
 
 
 
 
-
-@color_text(fg_color="yellow", bg_color="cyan")
+@singleton
 def loopy():
     print("Testing")
     total = 0
@@ -184,4 +205,5 @@ def loopy():
     return "Hello"
 
 
+loopy()
 loopy()
