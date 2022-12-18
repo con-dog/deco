@@ -88,7 +88,7 @@ def retry_on_failure(runs: int) -> Callable[[Callable], Callable]:
         return wrapper
     return decorator
 
-def unsupported_os(unsupported_os_list: List[str]) -> Callable[[Callable], Callable]:
+def supported_os(supported_os_list: List[str]) -> Callable[[Callable], Callable]:
     """A decorator that checks the current operating system and raises an
     exception if it is in the list of unsupported OSs. Typically you would
     decorate the 'main' function with this.
@@ -103,7 +103,7 @@ def unsupported_os(unsupported_os_list: List[str]) -> Callable[[Callable], Calla
         @wraps(func)
         def wrapper(*args, **kwargs):
             current_os = platform.system()
-            if current_os in unsupported_os_list:
+            if current_os not in supported_os_list:
                 raise Exception(f"The current OS ({current_os}) is not supported")
             return func(*args, **kwargs)
         return wrapper
@@ -244,7 +244,7 @@ def max_memory(byte: int) -> Callable[[Callable], Callable]:
 
 
 
-@max_memory(1024)
+@supported_os(['Linux'])
 def loopy():
     print("Testing")
     total = []
