@@ -9,10 +9,10 @@ modifying how the function is called.
 
 Examples:
 """
-from typing import Callable, Dict, TypeVar
+from typing import Callable, Dict, List, TypeVar
 from functools import wraps
 
-
+import platform
 import timeit
 
 
@@ -84,9 +84,30 @@ def retry_on_failure(runs: int) -> Callable[[Callable], Callable]:
         return wrapper
     return decorator
 
+def unsupported_os(unsupported_os_list: List[str]) -> Callable[[Callable], Callable]:
+    """A decorator that checks the current operating system and raises an
+    exception if it is in the list of unsupported OSs. Typically you would
+    decorate the 'main' function with this.
+
+    Args:
+    - unsupported_os_list: A list of strings representing the unsupported operating systems.
+
+    Returns:
+    - The decorated function.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            current_os = platform.system()
+            if current_os in unsupported_os_list:
+                raise Exception(f"The current OS ({current_os}) is not supported")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
-@retry_on_failure(runs=3)
+
+@unsupported_os(["Linux"])
 def loopy():
     total = 0
     for i in range(100000):
