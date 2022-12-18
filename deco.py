@@ -13,6 +13,7 @@ from typing import Callable, Dict, List, TypeVar
 from functools import wraps
 
 import platform
+import signal
 import threading
 import time
 import timeit
@@ -136,8 +137,7 @@ def add_spinner(func: Callable) -> Callable:
     return wrapper
 
 def color_text(fg_color: str = "cyan", bg_color: str = "yellow") -> Callable[[Callable], Callable]:
-    """
-    A decorator that colors text with the given foreground and background colors using ANSI escape codes.
+    """A decorator that colors text with the given foreground and background colors using ANSI escape codes.
 
     Args:
     - fg_color: The foreground color of the text. Defaults to "cyan".
@@ -171,8 +171,7 @@ def color_text(fg_color: str = "cyan", bg_color: str = "yellow") -> Callable[[Ca
     return decorator
 
 def singleton(func: Callable) -> Callable:
-    """
-    A decorator that turns a function into a singleton, meaning it can only be run once.
+    """A decorator that turns a function into a singleton, meaning it can only be run once.
 
     Args:
     - f: The function to be decorated.
@@ -193,17 +192,41 @@ def singleton(func: Callable) -> Callable:
 
     return Wrapper(func)
 
+def timeout(seconds: int) -> Callable[[Callable], Callable]:
+    """A decorator that forces a timeout if the decorated function runs longer than the given number of seconds.
+
+    Args:
+    - seconds: The number of seconds after which to force a timeout.
+
+    Returns:
+    - The decorated function.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            def timeout_handler(signum, frame):
+                raise TimeoutError("The function timed out")
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(seconds)
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, old_handler)
+            return result
+        return wrapper
+    return decorator
 
 
 
-@singleton
+
+@timeout(seconds=5)
 def loopy():
     print("Testing")
     total = 0
-    for i in range(10000000):
+    for i in range(1000000000):
         total += i
     return "Hello"
 
 
-loopy()
 loopy()
