@@ -9,7 +9,7 @@ modifying how the function is called.
 
 Examples:
 """
-from typing import Callable, Dict, List, TypeVar
+from typing import Callable, Dict, List, Type, TypeVar
 from functools import wraps
 
 import platform
@@ -218,8 +218,6 @@ def timeout(seconds: int) -> Callable[[Callable], Callable]:
         return wrapper
     return decorator
 
-
-
 def max_memory(byte: int) -> Callable[[Callable], Callable]:
     """A decorator that forces an exception if the decorated function's memory usage exceeds the given number of bytes.
 
@@ -242,13 +240,33 @@ def max_memory(byte: int) -> Callable[[Callable], Callable]:
         return wrapper
     return decorator
 
+def threaded(num_threads: int) -> Callable[[Type[Callable]], Type[Callable]]:
+    """A decorator that runs the decorated function with the given number of threads.
+
+    Args:
+    - num_threads (int): The number of threads to use.
+
+    Returns:
+    - func: The decorated function.
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            threads = []
+            for _ in range(num_threads):
+                t = threading.Thread(target=func, args=args, kwargs=kwargs)
+                t.start()
+                threads.append(t)
+            for t in threads:
+                t.join()
+        return wrapper
+    return decorator
 
 
-@supported_os(['Linux'])
+@threaded(num_threads=12)
 def loopy():
     print("Testing")
     total = []
-    for i in range(10000):
+    for i in range(1000000):
         total.append(i)
     return "Hello"
 
