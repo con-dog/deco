@@ -13,6 +13,8 @@ from typing import Callable, Dict, List, TypeVar
 from functools import wraps
 
 import platform
+import threading
+import time
 import timeit
 
 
@@ -67,7 +69,7 @@ def retry_on_failure(runs: int) -> Callable[[Callable], Callable]:
     times.
 
     Args:
-    - n: The number of times to retry the function on failure.
+    - runs: The number of times to retry the function on failure.
 
     Returns:
     - The decorated function.
@@ -105,12 +107,39 @@ def unsupported_os(unsupported_os_list: List[str]) -> Callable[[Callable], Calla
         return wrapper
     return decorator
 
+def add_spinner(func: Callable) -> Callable:
+    """A decorator that adds a loading spinner while a function is running.
+
+    Args:
+    - func: The function to be decorated.
+
+    Returns:
+    - The decorated function.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        spinner_stop = False
+        def _show_spinner():
+            spinner_chars = ["|", "/", "-", "\\"]
+            while not spinner_stop:
+                for char in spinner_chars:
+                    print(char, end="\r")
+                    time.sleep(0.1)
+        spinner_thread = threading.Thread(target=_show_spinner)
+        spinner_thread.start()
+        try:
+            result = func(*args, **kwargs)
+        finally:
+            spinner_stop = True
+            spinner_thread.join()
+        return result
+    return wrapper
 
 
-@unsupported_os(["Linux"])
+@add_spinner
 def loopy():
     total = 0
-    for i in range(100000):
+    for i in range(1000000000):
         total += i
 
 
