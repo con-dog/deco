@@ -135,12 +135,53 @@ def add_spinner(func: Callable) -> Callable:
         return result
     return wrapper
 
+def color_text(fg_color: str = "cyan", bg_color: str = "yellow") -> Callable[[Callable], Callable]:
+    """
+    A decorator that colors text with the given foreground and background colors using ANSI escape codes.
 
-@add_spinner
+    Args:
+    - fg_color: The foreground color of the text. Defaults to "cyan".
+    - bg_color: The background color of the text. Defaults to "yellow".
+
+    Returns:
+    - The decorated function.
+    """
+    def _get_color_code(color, background=False):
+        colors = {
+            "black": 30,
+            "red": 31,
+            "green": 32,
+            "yellow": 33,
+            "blue": 34,
+            "magenta": 35,
+            "cyan": 36,
+            "white": 37,
+        }
+        if background:
+            return colors[color] + 10
+        return colors[color]
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            fg_code = _get_color_code(fg_color)
+            bg_code = _get_color_code(bg_color, background=True)
+            colored_text = f"\033[{bg_code};{fg_code}m{f(*args, **kwargs)}\033[0m"
+            print(colored_text)
+        return wrapper
+    return decorator
+
+
+
+
+
+
+@color_text(fg_color="yellow", bg_color="cyan")
 def loopy():
+    print("Testing")
     total = 0
-    for i in range(1000000000):
+    for i in range(10000000):
         total += i
+    return "Hello"
 
 
 loopy()
