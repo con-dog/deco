@@ -13,6 +13,7 @@ from typing import Callable, Dict, List, TypeVar
 from functools import wraps
 
 import platform
+import resource
 import signal
 import threading
 import time
@@ -219,13 +220,36 @@ def timeout(seconds: int) -> Callable[[Callable], Callable]:
 
 
 
+def max_memory(byte: int) -> Callable[[Callable], Callable]:
+    """A decorator that forces an exception if the decorated function's memory usage exceeds the given number of bytes.
 
-@timeout(seconds=5)
+    Args:
+    - byte: The maximum number of bytes of memory that the function is allowed to use.
+
+    Returns:
+    - The decorated function.
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            original_limit = resource.getrlimit(resource.RLIMIT_AS)
+            resource.setrlimit(resource.RLIMIT_AS, (byte, original_limit[1]))
+            try:
+                result = func(*args, **kwargs)
+            finally:
+                resource.setrlimit(resource.RLIMIT_AS, original_limit)
+            return result
+        return wrapper
+    return decorator
+
+
+
+@max_memory(1024)
 def loopy():
     print("Testing")
-    total = 0
-    for i in range(1000000000):
-        total += i
+    total = []
+    for i in range(10000):
+        total.append(i)
     return "Hello"
 
 
